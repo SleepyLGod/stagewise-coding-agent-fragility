@@ -1,0 +1,49 @@
+experiment_name: "stagewise_fragility_default"
+description: "Default experiment scaffold for stage-wise coding agent fragility."
+
+benchmark: "humanevalplus"
+task_subset: "humanevalplus_main_20"
+max_rounds: 3
+repeats: 2
+
+logging:
+  output_dir: "logs"
+  save_raw_model_response: true
+  save_prompts: true
+
+results:
+  output_dir: "results"
+  write_summary_csv: true
+  write_markdown_summary: true
+
+execution:
+  timeout_seconds: 30
+  sandbox_mode: "local"
+  capture_stdout: true
+  capture_stderr: true
+
+conditions:
+  - condition_id: "clean"
+    injection_stage: "none"
+    perturbation_type: "none"
+    perturbation_strength: "none"
+
+  - condition_id: "task_paraphrase"
+    injection_stage: "task_prompt"
+    perturbation_type: "semantic_paraphrase"
+    perturbation_strength: "default"
+
+  - condition_id: "task_simplification"
+    injection_stage: "task_prompt"
+    perturbation_type: "mild_simplification"
+    perturbation_strength: "default"
+
+  - condition_id: "failure_paraphrase"
+    injection_stage: "failure_summary"
+    perturbation_type: "semantic_paraphrase"
+    perturbation_strength: "default"
+
+  - condition_id: "failure_simplification"
+    injection_stage: "failure_summary"
+    perturbation_type: "mild_simplification"
+    perturbation_strength: "default"

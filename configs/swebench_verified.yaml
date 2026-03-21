@@ -1,0 +1,36 @@
+experiment_name: "swebench_verified_case_study"
+description: "Small external-validity case-study configuration for SWE-bench Verified."
+
+benchmark:
+  name: "swebench_verified"
+  dataset_source: "SWE-bench/SWE-bench_Verified"
+  selection_strategy: "manual_case_list"
+  task_limit: 5
+
+loop:
+  max_rounds: 3
+  use_rule_based_failure_summary: true
+
+execution:
+  timeout_seconds: 300
+  sandbox_mode: "docker"
+  capture_stdout: true
+  capture_stderr: true
+
+conditions:
+  enabled:
+    - "clean"
+    - "task_paraphrase"
+    - "failure_paraphrase"
+
+metrics:
+  primary:
+    - "final_pass_rate"
+    - "average_repair_rounds"
+  secondary:
+    - "recovery_rate"
+    - "failure_type_distribution"
+
+notes:
+  - "Use only for a very small case-study section."
+  - "Do not let SWE-bench infrastructure define the main architecture."

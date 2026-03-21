@@ -1,0 +1,33 @@
+experiment_name: "humanevalplus_stagewise_fragility"
+description: "Controlled main experiment on HumanEval+ / EvalPlus."
+
+inherits: "configs/experiment_default.yaml"
+
+benchmark:
+  name: "humanevalplus"
+  dataset_source: "evalplus/humanevalplus"
+  task_subset: "humanevalplus_main_20"
+  selection_strategy: "fixed_manifest"
+  task_limit: 20
+
+loop:
+  max_rounds: 3
+  use_rule_based_failure_summary: true
+
+conditions:
+  enabled:
+    - "clean"
+    - "task_paraphrase"
+    - "task_simplification"
+    - "failure_paraphrase"
+    - "failure_simplification"
+
+metrics:
+  primary:
+    - "final_pass_rate"
+    - "average_repair_rounds"
+    - "average_total_tokens"
+  secondary:
+    - "recovery_rate"
+    - "failure_type_distribution"
+    - "first_deviation_step"
