@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Environment
+.env
+
+# Local outputs
+logs/*
+results/*
+!results/.gitkeep
+!logs/.gitkeep
+
+# macOS
+.DS_Store
