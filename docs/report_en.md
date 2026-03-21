@@ -15,6 +15,8 @@ This makes coding agents a useful setting for studying prompt fragility at the t
 
 The core premise of this project is that prompt fragility in coding agents should be analyzed stage by stage. Instead of asking only whether a perturbation hurts final accuracy, we ask where it hurts, how the error propagates, and whether the agent can recover.
 
+More precisely, the project does not attempt to reproduce a full repository-level software engineering agent. It studies a lightweight abstraction of the iterative execution-feedback-repair core that appears in real software engineering agent systems.
+
 ## 2. Core Problem
 
 The project investigates a lightweight multi-step coding agent built around a test-repair loop:
@@ -77,7 +79,7 @@ The intended contribution of this project is not to claim that prompt sensitivit
 
 The intended contribution is narrower and more concrete:
 
-- study a lightweight coding agent rather than single-turn code generation,
+- study a lightweight execution-feedback-repair loop rather than single-turn code generation,
 - compare fragility across different stages of the loop,
 - analyze not only final correctness but also deviation and recovery,
 - and ground the study in strict test-based evaluation.
@@ -90,9 +92,16 @@ to:
 
 > "At which stage does it matter most in a coding agent, and what kind of failure trajectory does it induce?"
 
-## 6. Recommended Experimental Framing
+## 6. Workflow Grounding And Experimental Framing
 
 The most defensible framing is a lightweight test-repair coding loop rather than a heavy agent platform.
+
+This workflow is grounded primarily in `mini-SWE-agent` and secondarily in `SWE-agent`.
+
+- `mini-SWE-agent` is the primary grounding because it provides a simple linear control flow, bash-based execution, and a benchmark-friendly engineering style.
+- `SWE-agent` is the repository-level semantic background because it provides the richer issue-resolution setting with repository navigation, code editing, and execution feedback.
+
+This ordering is deliberate. The latest official SWE-agent documentation states that `SWE-agent` has been superseded by `mini-swe-agent` and is now in maintenance-only mode.
 
 That loop should include:
 
@@ -110,7 +119,9 @@ The main benchmark should be `HumanEval+ / EvalPlus`, because it offers:
 - stronger tests than the original HumanEval setup,
 - and a cleaner fit for a focused experiment.
 
-`SWE-bench` and `OpenHands` are useful reference points, but they should be treated as optional extensions rather than the main empirical path.
+`HumanEval+ / EvalPlus` should be understood as the controlled main benchmark for a lightweight execution-feedback-repair loop, not as a repository-level issue-fixing benchmark.
+
+For real-world external validity, the preferred small case-study benchmark is `SWE-bench Verified`, with `SWE-bench Lite` as a backup if needed.
 
 ## 7. Recommended Injection Stages
 
@@ -179,6 +190,10 @@ A compact study can still be valuable, but the claims must stay aligned with the
 
 If the project expands into large-scale agent frameworks too early, the evaluation stack can dominate the project and displace the actual research question.
 
+### 11.5 Overclaiming repository-level relevance
+
+The main benchmark does not instantiate full repository-level issue resolution. The project therefore should not claim to evaluate full software engineering agents in general. The main claims are better framed around lightweight test-driven execution-feedback-repair loops, with small real-world validation through SWE-bench case studies.
+
 ## 12. Practical Recommendation
 
 The best version of this project is a tightly scoped empirical study of prompt perturbation in a lightweight coding loop.
@@ -198,7 +213,7 @@ The project should avoid becoming:
 
 ## 13. Summary
 
-The project is strongest when presented as a study of stage-wise fragility in a test-repair coding agent. Its value comes from narrowing the question, making the workflow explicit, using strict evaluation, and analyzing trajectories rather than only final answers.
+The project is strongest when presented as a study of stage-wise fragility in a lightweight execution-feedback-repair loop grounded in real software engineering agents. Its value comes from narrowing the question, making the workflow explicit, using strict evaluation, and analyzing trajectories rather than only final answers.
 
 That positioning is both technically defensible and aligned with the structure of the current research landscape.
 
@@ -218,4 +233,5 @@ That positioning is both technically defensible and aligned with the structure o
 - [EvalPlus GitHub](https://github.com/evalplus/evalplus)
 - [HumanEval+ on Hugging Face](https://huggingface.co/datasets/evalplus/humanevalplus)
 - [SWE-bench GitHub](https://github.com/SWE-bench/SWE-bench)
-- [mini-swe-agent GitHub](https://github.com/SWE-agent/mini-swe-agent)
+- [mini-SWE-agent GitHub](https://github.com/SWE-agent/mini-swe-agent)
+- [SWE-agent latest architecture docs](https://swe-agent.com/latest/background/architecture/)

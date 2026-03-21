@@ -1,432 +1,464 @@
 # Workflow And Benchmark Selection
 
-1. 现在真正要的 workflow 是什么
-2. 查到的几个 benchmark / agent 系统分别是什么
-3. 哪些符合要求，哪些不符合，哪里需要改动
-4. 最终应该怎么用到当前项目里
+## 1. Purpose Of This Document
 
-- **Source-backed facts**：官方 README、论文摘要、官方文档里明确写出来的内容
-- **Project abstraction**：我们基于这些来源，为当前项目做的轻量化抽象
+This document answers four concrete questions:
 
----
+1. What workflow do we actually want for this project?
+2. Which existing agent systems and benchmarks are relevant?
+3. Which ones fit the project requirements, and which ones require adaptation?
+4. What is the final recommended combination for implementation and reporting?
 
-## 现在真正要的 workflow
+The document deliberately separates:
 
-我要的不是一个凭空捏造的 code agent workflow，也不是一个过于复杂、难以在课程项目里落地的完整产品系统。要求：
+- **Source-backed facts**: what the official paper, README, or documentation explicitly states
+- **Project abstraction**: what we derive from those sources for the current research design
 
-- **来源真实**：能明确对齐到已有软件工程 agent 系统，而不是纯想象
-- **可控**：适合做 stage-wise prompt fragility 实验
-- **可执行**：主实验不依赖重型 infra
-- **有现实参照**：至少能接触到真实 GitHub issue setting
-- **可解释**：能把每一步的输入、输出、反馈和偏航记录清楚
-
-因此，当前最合适的目标不是“完整复刻某个现成系统”，而是：
-
-> 用真实软件工程 agent 的 workflow 作为依据，抽象出一个 lightweight test-repair loop，用于研究 stage-wise instruction fragility。
+This separation is necessary. It prevents us from presenting a custom research scaffold as if it were a directly inherited standard workflow from an existing paper or product.
 
 ---
 
-## workflow 来源
+## 2. What Workflow We Actually Need
 
-## SWE-agent
+The project does **not** need:
 
-### Source-backed facts
+- a fictional coding agent loop invented without grounding,
+- a full reproduction of a production-level repository agent,
+- or a heavy infrastructure stack that dominates the project.
 
-`SWE-agent` 的论文摘要、官方 README 和官方文档明确说明：
+The project **does** need a workflow that satisfies the following requirements:
 
-- 它的任务是修复 **real GitHub repositories** 里的 issue
-- 它通过一个 **Agent-Computer Interface (ACI)** 让模型更容易：
-  - 浏览仓库
-  - 查看代码
-  - 编辑代码
-  - 执行测试和其他程序
-- 它的整体目标是：给定 repo 和 issue，生成一个修复问题的 patch
+- **Real grounding**: it should be clearly connected to real software engineering agent systems
+- **Controlled design**: it should support stage-wise prompt fragility experiments
+- **Executability**: the main experiment should remain lightweight and tractable
+- **External validity**: the project should still touch real GitHub issue settings
+- **Interpretability**: each step, feedback signal, and deviation point should be loggable
 
-官方来源：
+Therefore, the right target is:
 
-- [SWE-agent paper (arXiv:2405.15793)](https://arxiv.org/abs/2405.15793)
-- [SWE-agent GitHub README](https://github.com/SWE-agent/SWE-agent)
-- [SWE-agent ACI documentation](https://swe-agent.com/0.7/background/aci/)
-- [SWE-agent architecture documentation](https://swe-agent.com/0.7/background/architecture/)
+> a lightweight abstraction of the iterative execution-feedback-repair core of real software engineering agents.
 
-ACI 文档还明确提到一些关键设计：
-
-- edit 命令带 linter 检查
-- 提供专门的 file viewer
-- 提供专门的全目录搜索命令
-- agent 需要依赖命令输出与反馈继续决策
-
-架构文档还明确说：
-
-- `run.py` 会启动环境
-- 默认会启动 Docker container 和 shell session
-- 模型动作会在这个 shell session 里执行
-- 历史会被送回模型，必要时做 history compression
-
-如果只保留文档明确支持的内容，`SWE-agent` 的 workflow 可以稳妥概括为：
-
-1. 输入一个 repo 和一个 issue
-2. agent 在代码环境中浏览、搜索、查看文件
-3. agent 编辑代码
-4. agent 执行测试或其他命令
-5. agent 根据反馈继续修改
-6. 最终输出一个 patch / 修复结果
-
-### 是否完全符合当前项目
-
-**部分符合，但不能直接拿来当主实验 workflow。**
-
-符合的地方：
-
-- 来源真实
-- real-world software issue setting 很强
-- workflow 有明确的仓库交互、代码编辑、测试执行
-
-不符合的地方：
-
-- 太重
-- 带 ACI 和长期 shell session
-- 更像完整 agent system，而不是轻量研究 scaffold
-- 直接拿来做主实验，会把大量时间耗在环境与 agent 基建上
-
-### 对当前项目应该怎么用
-
-`SWE-agent` 适合充当：
-
-- **workflow 的主要依据**
-- **real-world software engineering reference**
-- **附录或 case study 的来源背景**
-
-它不适合直接作为你们主实验的完整实现模板。
+That wording is important. It is more accurate than claiming that the project implements a full repository-level software engineering agent workflow.
 
 ---
 
-## mini-SWE-agent
+## 3. Workflow Grounding
 
-### Source-backed facts
+The current best grounding is:
 
-`mini-SWE-agent` 的 README 明确写出：
+- **Primary workflow grounding: mini-SWE-agent**
+- **Repository-level semantic background: SWE-agent**
 
-- 它 **does not have any tools other than bash**
-- 它 **has a completely linear history**
-- 它通过 `subprocess.run` 执行动作
-- 每个 action **completely independent**
-- 它适合简单控制流、稳定 sandbox、benchmark evaluation
-- 它也用于解决 GitHub issues
+This ordering is intentional.
 
-官方来源：
+The latest official SWE-agent architecture documentation explicitly states that:
+
+- `SWE-agent has been superseded by mini-swe-agent`
+- `SWE-agent is now in maintenance-only mode`
+
+Official source:
+
+- [SWE-agent latest architecture docs](https://swe-agent.com/latest/background/architecture/)
+
+That means the current ecosystem itself points toward mini-SWE-agent as the simpler default reference, while SWE-agent remains the canonical heavier repository-level background system.
+
+---
+
+## 4. Primary Workflow Grounding: mini-SWE-agent
+
+## 4.1 Source-backed facts
+
+The official `mini-SWE-agent` README explicitly states that:
+
+- it **does not have any tools other than bash**
+- it **has a completely linear history**
+- it executes actions with `subprocess.run`
+- each action is **completely independent**
+- it is suitable for simple control flow, stable sandboxing, and benchmark evaluation
+- it can solve GitHub issues
+
+Official source:
 
 - [mini-SWE-agent GitHub README](https://github.com/SWE-agent/mini-swe-agent)
 
-README 还明确比较了 `mini-SWE-agent` 和 `SWE-agent`：
+The README also explicitly contrasts it with `SWE-agent`:
 
-- 如果你想要更简单的控制流、更快更稳定的 sandbox 和 benchmark evaluation，推荐 `mini-SWE-agent`
-- 如果你想试验不同工具集和 history processors，则去用 `SWE-agent`
+- if you want simpler control flow, faster and more stable sandboxing, and easier benchmark evaluation, use `mini-SWE-agent`
+- if you want more advanced tool experiments or history processors, use `SWE-agent`
 
-### 这意味着什么
+## 4.2 What workflow this implies
 
-在不越界的前提下，`mini-SWE-agent` 的 workflow 可以概括为：
+Without over-claiming, the source-backed mini-SWE-agent workflow can be summarized as:
 
-1. 输入任务或 issue
-2. 模型基于当前 message history 生成下一步 action
-3. action 通过 bash / `subprocess.run` 执行
-4. 输出追加到线性 history
-5. 下一步继续根据这个 history 决策
-6. 重复直到结束
+1. receive a task or issue,
+2. let the model generate the next action from the current history,
+3. execute that action through bash / `subprocess.run`,
+4. append the resulting output to a linear history,
+5. continue until the run terminates.
 
-### 是否完全符合当前项目
+## 4.3 Why it fits this project
 
-**非常接近。**
+mini-SWE-agent is the best primary workflow reference for this project because:
 
-符合的地方：
+- it is real, not fictional,
+- it is light enough to abstract,
+- it has a simple control flow,
+- it is naturally trajectory-friendly,
+- and it aligns with benchmark-oriented evaluation rather than full product complexity.
 
-- 来源真实
-- 结构轻
-- 控制流简单
-- 很适合做可解释、可记录的 trajectory 分析
-- 非常适合作为 lightweight scaffold 的工程依据
+## 4.4 What it does **not** give us directly
 
-不完全符合的地方：
+mini-SWE-agent does **not** directly provide:
 
-- 它不是专门为“stage-wise prompt fragility”设计的
-- 它没有天然把流程切成 `Task Prompt / Failure Summary / Revision Prompt` 这样的实验阶段
-- 它的 bash-only 设计更通用，你们还需要把它抽象成更适合代码任务的 test-repair loop
+- explicit `Task Prompt / Failure Summary / Revision Prompt` experimental stages,
+- a built-in stage-wise fragility design,
+- or a research-oriented prompt injection framework.
 
-### 对当前项目应该怎么用
+Those must still be implemented by us.
 
-`mini-SWE-agent` 最适合充当：
+## 4.5 How we should use it
 
-- **轻量 workflow 的直接工程依据**
-- **控制流设计参考**
-- **实验系统实现风格参考**
+mini-SWE-agent should be used as:
+
+- the **primary workflow grounding**
+- the **control-flow reference**
+- the **trajectory and logging style reference**
+- the **engineering style reference for a lightweight scaffold**
+
+It should **not** be imported into the project as a direct, unchanged main system.
 
 ---
 
-## benchmark 选型
+## 5. Repository-Level Background: SWE-agent
 
-## HumanEval+ / EvalPlus
+## 5.1 Source-backed facts
 
-### Source-backed facts
+The `SWE-agent` paper, README, and documentation explicitly describe a repository-level software engineering agent setting:
 
-`EvalPlus` 官方仓库明确说明：
+- it addresses issues in **real GitHub repositories**
+- it uses an **Agent-Computer Interface (ACI)**
+- the ACI is designed to help the model:
+  - navigate repositories,
+  - inspect code,
+  - edit code,
+  - execute tests and other programs
+- the end goal is to produce a patch that resolves the issue
 
-- `HumanEval+` 是对原始 HumanEval 的更严格版本
-- 它有 **80x more tests than the original HumanEval**
-- `EvalPlus` 提供更严格、更安全的代码评测框架
+Official sources:
 
-官方来源：
+- [SWE-agent paper (arXiv:2405.15793)](https://arxiv.org/abs/2405.15793)
+- [SWE-agent GitHub README](https://github.com/SWE-agent/SWE-agent)
+- [SWE-agent ACI docs](https://swe-agent.com/0.7/background/aci/)
+- [SWE-agent latest architecture docs](https://swe-agent.com/latest/background/architecture/)
+
+The ACI documentation further states that it provides:
+
+- edit commands with linter checks,
+- a dedicated file viewer,
+- dedicated directory-level search support,
+- and an interaction pattern where the agent relies on command feedback to continue reasoning.
+
+The architecture documentation also makes clear that:
+
+- the runtime initializes an environment,
+- the default path launches a Docker container and shell session,
+- model actions are executed inside that session,
+- and history may be compressed when needed.
+
+## 5.2 What workflow this implies
+
+The source-backed SWE-agent workflow can be summarized as:
+
+1. receive a repository and an issue,
+2. inspect and navigate the repository,
+3. search and edit code,
+4. run tests or other commands,
+5. use execution feedback to continue modification,
+6. output a final patch / repair result.
+
+## 5.3 Why it matters to this project
+
+SWE-agent matters because it gives the project a strong real-world semantic anchor:
+
+- repository-level issue resolution,
+- interactive execution feedback,
+- code editing in context,
+- and patch-oriented repair.
+
+## 5.4 Why it should **not** be our main template
+
+SWE-agent is not the right direct implementation template for the main experiment because:
+
+- it is heavier,
+- it depends on a richer agent-computer interface,
+- it assumes a longer-lived environment and shell session,
+- and it is closer to a complete repository-level agent system than to a compact experimental scaffold.
+
+## 5.5 How we should use it
+
+SWE-agent should be used as:
+
+- the **repository-level background reference**
+- the **semantic justification for issue-resolution workflows**
+- the **external-validity background for real software engineering agents**
+
+It should not be presented as the system we are faithfully reproducing.
+
+---
+
+## 6. Main Benchmark: HumanEval+ / EvalPlus
+
+## 6.1 Source-backed facts
+
+The official `EvalPlus` README explicitly states that:
+
+- it is a **rigorous evaluation framework for LLM4Code**
+- `HumanEval+` contains **80x more tests than the original HumanEval**
+- its packages, images, and tools support safer and easier code evaluation
+
+Official sources:
 
 - [EvalPlus GitHub](https://github.com/evalplus/evalplus)
 - [HumanEval+ on Hugging Face](https://huggingface.co/datasets/evalplus/humanevalplus)
 
-Hugging Face 页面当前显示：
+The Hugging Face dataset page currently shows:
 
-- `HumanEval+` 有 **164** 个任务
+- `HumanEval+` has **164 tasks**
 
-### benchmark 内容是什么
+## 6.2 What the benchmark actually is
 
-它本质上是：
+HumanEval+ is a function-level coding benchmark:
 
-- 给你一个函数级别编程任务
-- 让模型生成代码
-- 再用更严格的单元测试去验证
+- a function task is provided,
+- the model produces code,
+- and correctness is verified with a stricter test suite.
 
-### workflow 是什么
+It is **not** a repository-level issue-fixing benchmark.
 
-这不是 repository-level issue fixing benchmark。它更像：
+## 6.3 What workflow it supports
 
-1. 给一个函数任务
-2. 生成代码
-3. 跑测试
-4. 判断是否通过
+By itself, the benchmark supports a simple generation-and-test workflow:
 
-如果我们自己加上 repair loop，它就会变成：
+1. read a task,
+2. generate code,
+3. run tests,
+4. determine pass or fail.
 
-1. 读题
-2. 生成代码
-3. 跑测试
-4. 形成失败摘要
-5. 修复
-6. 重复
+If we build a repair loop on top of it, then the workflow becomes:
 
-注意：**后面这个多轮 loop 不是 HumanEval+ 自带的，而是你们在其上构造出来的实验 workflow。**
+1. read the task,
+2. generate code,
+3. run tests,
+4. construct a failure summary,
+5. revise the code,
+6. repeat.
 
-### 是否符合要求
+That second, multi-step workflow is **our project abstraction**, not something HumanEval+ provides natively.
 
-**符合主实验要求，但不符合“real-world case”要求。**
+## 6.4 Why it fits the project
 
-符合的地方：
+HumanEval+ / EvalPlus is the right main benchmark because it is:
 
-- 轻量
-- 严格
-- 任务清楚
-- 方便做控制实验
-- 很适合研究 stage-wise fragility
+- light,
+- strict,
+- controlled,
+- relatively easy to reproduce,
+- and well suited for stage-wise perturbation experiments.
 
-不符合的地方：
+## 6.5 What it does **not** cover
 
-- 不是真实 GitHub issue
-- 不是 repository-level software engineering task
+It does not provide:
 
-### 对当前项目应该怎么用
+- real GitHub issues,
+- repository navigation,
+- localization in large codebases,
+- cross-file editing,
+- or patch validation in a real repository workflow.
 
-它应该用作：
+Therefore, the main claims of the project should be framed as applying to:
 
-- **主实验 benchmark**
+> lightweight test-driven execution-feedback-repair loops
 
-原因是它能把变量控制住，让你真正测到 prompt fragility，而不是环境复杂度。
+rather than to all repository-level software engineering agents.
 
 ---
 
-## SWE-bench Lite
+## 7. Real-World External Validity Benchmark: SWE-bench Verified
 
-### Source-backed facts
+## 7.1 Source-backed facts
 
-`SWE-bench` 官方 README 明确说明：
+The official `SWE-bench` README explicitly states that:
 
-- 这是一个 benchmark for evaluating large language models on **real world software issues collected from GitHub**
-- 给定 codebase 和 issue，模型需要生成一个能解决问题的 patch
-- `SWE-bench Lite` 是其提供的一个数据变体
-- 评测依赖 Docker
-- 官方明确警告评测 **resource intensive**
-- 推荐环境至少：
+- SWE-bench evaluates language models on **real world software issues collected from GitHub**
+- the task is to generate a patch for a given codebase and issue
+- `SWE-bench Verified` is a **500-task subset**
+- these are tasks that **real software engineers confirmed are solvable**
+- evaluation is Docker-based
+- evaluation is **resource intensive**
+- the recommended environment includes at least:
   - 120GB free storage
   - 16GB RAM
   - 8 CPU cores
 
-官方来源：
+Official source:
 
 - [SWE-bench GitHub](https://github.com/SWE-bench/SWE-bench)
 
-README 还明确给出 Lite 的评测命令入口：
+## 7.2 What the benchmark actually is
 
-- `python -m swebench.harness.run_evaluation --dataset_name princeton-nlp/SWE-bench_Lite ...`
+SWE-bench Verified is a real repository-level issue-fixing benchmark:
 
-### benchmark 内容是什么
+- real repository,
+- real issue,
+- real patch-style repair task,
+- validated under a stronger notion of practical solvability than a random small sample.
 
-它本质上是：
+## 7.3 Why it is the right external-validity choice
 
-- 真实开源仓库
-- 真实 issue
-- 真实 patch-style 修复任务
+If the project only intends to run **3 to 5 real-world cases**, Verified is the stronger default than Lite because the benchmark itself gives a clearer solvability signal.
 
-### 它的 workflow 是什么
+That makes it a better small-sample case-study choice.
 
-从 benchmark 角度看，它的任务流程是：
+## 7.4 Why it cannot be the main benchmark
 
-1. 输入 repo + issue
-2. 系统生成 patch
-3. 评测 harness 在容器里验证 patch 是否解决问题
+It is too heavy for the main controlled experiment because:
 
-### 是否符合你的要求
+- the environment is expensive,
+- the evaluation stack is complex,
+- the tasks are repository-level,
+- and infrastructure noise can easily dominate the prompt-fragility question.
 
-**非常符合“real-world case”要求，但不适合做主实验。**
+## 7.5 How we should use it
 
-符合的地方：
+SWE-bench Verified should be used as:
 
-- 真实 GitHub issue
-- 真实软件工程任务
-- 非常适合做现实参照
-
-不符合主实验的地方：
-
-- 太重
-- 评测复杂
-- Docker / 磁盘 / CPU 成本高
-- 对课程项目主线不友好
-
-### 对当前项目应该怎么用
-
-它最合适的定位是：
-
-- **real-world case study benchmark**
-- **附录 / 外部有效性验证**
-
-你们可以只挑 **3 到 5 个实例** 做定性或小样本对照。
+- the **preferred external-validity case-study benchmark**
+- a **small real-world validation section**
+- a **3 to 5 instance qualitative or small-sample extension**
 
 ---
 
-## 原始 HumanEval
+## 8. Backup Real-World Benchmark: SWE-bench Lite
 
-### Source-backed facts
+## 8.1 Source-backed facts
 
-原始 `HumanEval` 是 OpenAI 发布的代码生成 benchmark。
-`EvalPlus` 官方明确把 `HumanEval+` 描述为比原始版本更严格。
+The official SWE-bench repository also provides:
 
-官方来源：
+- `SWE-bench Lite`
+
+It belongs to the same real GitHub issue-fixing benchmark family, but the repository does not present it with the same explicit “real software engineers confirmed are solvable” phrasing used for Verified.
+
+Official source:
+
+- [SWE-bench GitHub](https://github.com/SWE-bench/SWE-bench)
+
+## 8.2 How it should be positioned
+
+SWE-bench Lite should be treated as:
+
+- a **backup external-validity benchmark**
+- a fallback when Verified is inconvenient in a specific setup
+- not the first choice when the goal is a very small, convincing real-world case-study section
+
+---
+
+## 9. Original HumanEval
+
+## 9.1 Source-backed facts
+
+The original `HumanEval` is the older OpenAI benchmark, while `EvalPlus` explicitly positions `HumanEval+` as the stricter version.
+
+Official sources:
 
 - [HumanEval GitHub](https://github.com/openai/human-eval)
 - [EvalPlus GitHub](https://github.com/evalplus/evalplus)
 
-### 是否适合当前项目
+## 9.2 How it should be positioned
 
-**不如 HumanEval+。**
+Original HumanEval should not have any main-line role in this project.
 
-如果已经决定用 EvalPlus，就没必要把原始 HumanEval 作为主线 benchmark。
-
-它最多只适合作为：
-
-- 附录对照
-- 说明更严格测试会减少伪通过
+At most, it can appear in a validity discussion as the looser predecessor that HumanEval+ improves upon.
 
 ---
 
-## 最终推荐组合
+## 10. Final Recommended Combination
 
-当前最合理的组合就是：
+The most defensible project setup is:
 
-- **workflow 依据**：`SWE-agent + mini-SWE-agent`
-- **主实验 benchmark**：`HumanEval+ / EvalPlus`
-- **real-world case study**：`SWE-bench Lite` 小样本
-
----
-
-## 为什么这个组合最合理
-
-## workflow 不是虚构的
-
-来源有两个层次：
-
-- `SWE-agent` 提供真实 repository-level issue-fixing workflow
-- `mini-SWE-agent` 提供简单、线性、可控的 agent scaffold
-
-所以你们的系统不是凭空捏造，而是：
-
-> a lightweight abstraction grounded in real software engineering agent workflows.
-
-## 主实验还能做完
-
-`HumanEval+ / EvalPlus` 的变量更可控，更适合做：
-
-- stage-wise perturbation
-- trajectory logging
-- recovery analysis
-
-## 也能诚实覆盖 real-world setting
-
-通过 `SWE-bench Lite` 的少量 case study，你们可以说：
-
-- 主实验在可控 benchmark 上完成
-- 外部有效性用真实 GitHub issue 做小规模验证
-
-这个说法是稳的。
+- **workflow grounding**: `mini-SWE-agent` first, `SWE-agent` second
+- **main controlled benchmark**: `HumanEval+ / EvalPlus`
+- **external-validity benchmark**: `SWE-bench Verified` for a very small case-study section
+- **backup external-validity benchmark**: `SWE-bench Lite`
 
 ---
 
-## Solution
+## 11. Why This Combination Is Strong
 
-### 目标 workflow
+## 11.1 The workflow is not fictional
 
-1. 输入一个代码任务
-2. 构造 task prompt
-3. 让模型生成代码
-4. 运行测试
-5. 把失败信息整理成 failure summary
-6. 让模型基于失败信息修复代码
-7. 重复直到通过或达到轮数上限
+The workflow is grounded in real software engineering agent systems:
 
-### 它和来源系统的关系
+- mini-SWE-agent provides the simple linear control-flow reference,
+- SWE-agent provides the richer repository-level issue-resolution background.
 
-- 它**不是** `SWE-agent` 的逐行复刻
-- 它**不是** `mini-SWE-agent` 的原样拷贝
-- 它是对这两者共有核心的轻量抽象：
-  - 任务输入
-  - 代码环境操作
-  - 执行反馈
-  - 迭代修复
+## 11.2 The main experiment remains controlled
 
-### 它还需要什么改动
+HumanEval+ / EvalPlus gives the project:
 
-为了适配当前研究问题，这个 workflow 还必须做三件额外的事情：
+- strict testing,
+- manageable task scale,
+- lower infrastructure variance,
+- and a cleaner stage-wise perturbation setting.
 
-1. **显式阶段化**
-   把输入切成 `Task Prompt` 和 `Failure Summary` 两个可控注入点
-2. **结构化日志**
-   每一轮都记录 prompt、代码、测试结果、失败摘要、token 成本、是否恢复
-3. **实验条件开关**
-   能稳定切换：
+## 11.3 External validity is still addressed
 
-   - clean
-   - task perturbation
-   - failure-summary perturbation
-
-这些是研究需要，不是原系统直接提供的。
+A small SWE-bench Verified case-study section lets the project connect its findings to real GitHub issue resolution without turning the entire project into a heavy repository-agent evaluation pipeline.
 
 ---
 
-## 如何用到当前项目
+## 12. The Workflow We Should Actually Implement
 
-## 写进报告时怎么说
+This section is **project abstraction**, not a verbatim reproduction of either source system.
 
-> Our workflow is not a fictional agent loop invented from scratch. It is a lightweight abstraction grounded in real software engineering agent systems, primarily SWE-agent and mini-SWE-agent. SWE-agent provides the repository-level issue-resolution setting with browsing, editing, and execution feedback, while mini-SWE-agent provides a simple, linear, and bash-centered control flow that is easier to adapt into a controlled research scaffold.
+The project workflow should be:
 
-然后再补一句：
+1. receive a coding task,
+2. build a task prompt,
+3. generate code,
+4. execute tests,
+5. build a failure summary,
+6. revise the code,
+7. repeat until success or a round limit.
 
-> For controlled main experiments, we use HumanEval+ / EvalPlus. For real-world external validity, we add a small SWE-bench Lite case-study section.
+This workflow keeps the **iterative execution-feedback-repair core** of real software engineering agents, but it does **not** preserve the full repository-level capability set.
 
-## 代码实现时怎么落地
+It intentionally leaves out:
 
-当前项目的代码结构应该围绕这个抽象来建：
+- repository navigation,
+- issue localization,
+- cross-file editing,
+- patch application in large repositories,
+- long-horizon shell-session management.
+
+That omission is acceptable, but it must be described honestly in the report.
+
+---
+
+## 13. Recommended Reporting Language
+
+The safest way to describe the project is:
+
+> Our workflow is grounded primarily in mini-SWE-agent for its simple linear control flow and stable sandbox-friendly execution model, and secondarily in SWE-agent as the canonical repository-level reference for issue-resolution agents with execution feedback. We do not attempt to faithfully reproduce a full repository-level software engineering agent. Instead, we study a lightweight abstraction of its iterative execution-feedback-repair core.
+
+For benchmark selection, the report should say:
+
+> We use HumanEval+ / EvalPlus for controlled stage-wise prompt fragility experiments, and a very small SWE-bench Verified case-study section for external validity in real GitHub issue settings.
+
+---
+
+## 14. Implementation Use
+
+For the codebase, this decision implies a scaffold with:
 
 - `TaskPromptBuilder`
 - `Solver`
@@ -436,54 +468,21 @@ README 还明确给出 Lite 的评测命令入口：
 - `ExperimentRunner`
 - `MetricsCollector`
 
-其中：
+The key research-facing hooks are:
 
-- `TaskPromptBuilder` 和 `FailureSummaryBuilder` 是两个主要注入点
-- `TestRunner` 对接 EvalPlus 或 SWE-bench harness
-- `ExperimentRunner` 负责 condition switching
-
-## benchmark 使用策略
-
-### 主实验
-
-- 用 `HumanEval+ / EvalPlus`
-- 目的是测 clean vs perturbed 条件
-- 强调 stage-wise fragility
-
-### 小样本现实案例
-
-- 用 `SWE-bench Lite`
-- 只跑 3 到 5 个实例
-- 目的是展示 workflow 在真实 issue setting 中也有对应现象
+- explicit stage boundaries,
+- structured logs,
+- clean vs perturbed condition switches,
+- and compatibility with both EvalPlus and a small SWE-bench case-study path.
 
 ---
 
-## 结论
-
-如果只问一句：
-
-> 我们到底该采用什么 workflow 和 benchmark 组合？
-
-答案就是：
-
-- **workflow 依据**：`SWE-agent + mini-SWE-agent`
-- **主实验**：`HumanEval+ / EvalPlus`
-- **现实案例**：`SWE-bench Lite` 小样本
-
-这个组合满足三件事：
-
-- workflow 来源真实，不是虚构
-- 主实验可控，适合做 prompt fragility 研究
-- 也能接触真实 GitHub issue setting
-
----
-
-## Links
+## 15. Links
 
 - [SWE-agent paper](https://arxiv.org/abs/2405.15793)
 - [SWE-agent GitHub](https://github.com/SWE-agent/SWE-agent)
 - [SWE-agent ACI docs](https://swe-agent.com/0.7/background/aci/)
-- [SWE-agent architecture docs](https://swe-agent.com/0.7/background/architecture/)
+- [SWE-agent latest architecture docs](https://swe-agent.com/latest/background/architecture/)
 - [mini-SWE-agent GitHub](https://github.com/SWE-agent/mini-swe-agent)
 - [EvalPlus GitHub](https://github.com/evalplus/evalplus)
 - [HumanEval+ dataset](https://huggingface.co/datasets/evalplus/humanevalplus)
