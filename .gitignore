@@ -18,3 +18,10 @@ results/*
 
 # macOS
 .DS_Store
+
+
+*.txt
+notes/
+archive/
+tmp/
+scratch/

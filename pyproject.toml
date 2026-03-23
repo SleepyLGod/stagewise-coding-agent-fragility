@@ -3,6 +3,14 @@ name = "stagewise-coding-agent-fragility"
 version = "0.1.0"
 description = "Research scaffold for studying stage-wise prompt fragility in lightweight coding agents."
 requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0,<7.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=9.0,<10.0",
+]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
