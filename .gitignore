@@ -25,3 +25,10 @@ notes/
 archive/
 tmp/
 scratch/
+
+*.egg-info/
+*.egg
+dist/
+build/
+__pycache__/
+*.pyc
