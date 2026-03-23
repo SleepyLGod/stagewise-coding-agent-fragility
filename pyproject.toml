@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Research scaffold for studying stage-wise prompt fragility in lightweight coding agents."
 requires-python = ">=3.10"
 dependencies = [
+  "evalplus>=0.3.1",
+  "python-dotenv>=1.2.2",
   "PyYAML>=6.0,<7.0",
 ]
 
