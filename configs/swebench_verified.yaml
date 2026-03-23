@@ -1,6 +1,8 @@
 experiment_name: "swebench_verified_case_study"
 description: "Small external-validity case-study configuration for SWE-bench Verified."
 
+inherits: "configs/experiment_default.yaml"
+
 benchmark:
   name: "swebench_verified"
   dataset_source: "SWE-bench/SWE-bench_Verified"

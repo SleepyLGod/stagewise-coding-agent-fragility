@@ -14,6 +14,12 @@ loop:
   max_rounds: 3
   use_rule_based_failure_summary: true
 
+execution:
+  timeout_seconds: 30
+  sandbox_mode: "local"
+  capture_stdout: true
+  capture_stderr: true
+
 conditions:
   enabled:
     - "clean"

@@ -1,9 +1,17 @@
 experiment_name: "stagewise_fragility_default"
 description: "Default experiment scaffold for stage-wise coding agent fragility."
 
-benchmark: "humanevalplus"
-task_subset: "humanevalplus_main_20"
-max_rounds: 3
+benchmark:
+  name: "humanevalplus"
+  dataset_source: ""
+  task_subset: "humanevalplus_main_20"
+  selection_strategy: "fixed_manifest"
+  task_limit: 20
+
+loop:
+  max_rounds: 3
+  use_rule_based_failure_summary: true
+
 repeats: 2
 
 logging:
@@ -21,6 +29,16 @@ execution:
   sandbox_mode: "local"
   capture_stdout: true
   capture_stderr: true
+
+metrics:
+  primary:
+    - "final_pass_rate"
+    - "average_repair_rounds"
+    - "average_total_tokens"
+  secondary:
+    - "recovery_rate"
+    - "failure_type_distribution"
+    - "first_deviation_step"
 
 conditions:
   - condition_id: "clean"
