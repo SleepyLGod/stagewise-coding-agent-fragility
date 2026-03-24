@@ -64,7 +64,7 @@ This repository provides a robust, lightweight scaffold for studying **stage-wis
 To test if "more creative models are more fragile to stage-wise instruction noise", the scaffold supports sweeping across the `temperature` and `top_p` space. We provide **16 pre-generated configurations** in the `configs/` directory.
 
 ### Available Configurations
-- **Models**: `ds_chat` (DeepSeek), `qwen_plus` (Qwen), `qwen_turbo` (Qwen), `ds_reason` (Reasoner Baseline).
+- **Models**: `ds_chat` (DeepSeek), `qwen_plus` (Qwen), `qwen_turbo` (Qwen), `ds_reason` (Reasoner Default).
 - **Decoding Levels**:
   - `deterministic`: (Temp 0.0) No randomness.
   - `conservative`: (Temp 0.3) Safe, high-probability sampling.

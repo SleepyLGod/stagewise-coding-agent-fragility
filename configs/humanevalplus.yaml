@@ -6,9 +6,9 @@ inherits: "configs/experiment_default.yaml"
 benchmark:
   name: "humanevalplus"
   dataset_source: "evalplus/humanevalplus"
-  task_subset: "humanevalplus_main_20"
-  selection_strategy: "fixed_manifest"
-  # task_limit: 20
+  task_subset: "all"
+  selection_strategy: "first_n"
+  task_limit: 0
 
 loop:
   max_rounds: 3

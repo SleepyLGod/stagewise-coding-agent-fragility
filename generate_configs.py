@@ -93,7 +93,7 @@ def main():
             "timeout_seconds": 60,
         }
     }
-    with (config_dir / "models_ds_reason_baseline.yaml").open("w", encoding="utf-8") as f:
+    with (config_dir / "models_ds_reason_default.yaml").open("w", encoding="utf-8") as f:
         yaml.dump(reasoner_config, f, sort_keys=False)
 
     print("Generated 16 configuration files in configs/.")
