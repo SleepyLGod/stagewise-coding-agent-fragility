@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from functools import partial
 from pathlib import Path
 
@@ -72,12 +73,15 @@ def main() -> None:
         )
 
     # ---- Benchmark tasks ----
-    from stagewise_coding_agent_fragility.benchmarks.humanevalplus import (
-        HumanEvalPlusAdapter,
-    )
+    if experiment_config.benchmark.name == "swebench_verified":
+        from stagewise_coding_agent_fragility.benchmarks.swebench_verified import SWEBenchVerifiedAdapter
+        adapter = SWEBenchVerifiedAdapter(task_limit=experiment_config.benchmark.task_limit)
+        tasks = adapter.load_tasks()
+    else:
+        from stagewise_coding_agent_fragility.benchmarks.humanevalplus import HumanEvalPlusAdapter
+        adapter = HumanEvalPlusAdapter()
+        tasks = adapter.select_subset(task_limit=experiment_config.benchmark.task_limit)
 
-    adapter = HumanEvalPlusAdapter()
-    tasks = adapter.select_subset(task_limit=experiment_config.benchmark.task_limit)
     total_available = len(adapter.load_tasks())
 
     print(
@@ -102,14 +106,24 @@ def main() -> None:
     # ---- Log writer ----
     from stagewise_coding_agent_fragility.logging.writer import write_run_log
 
-    log_dir = experiment_config.logging.output_dir
-    log_writer = partial(write_run_log, output_dir=log_dir)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    experiment_name = experiment_config.experiment_name
+    log_dir = Path(experiment_config.logging.output_dir) / f"{experiment_name}_{timestamp}"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    log_writer = partial(write_run_log, output_dir=str(log_dir))
 
     # ---- Execution ----
     from stagewise_coding_agent_fragility.execution.test_runner import PythonTestRunner
+    from stagewise_coding_agent_fragility.execution.docker_sandbox import DockerSandboxExecutor
     from stagewise_coding_agent_fragility.experiments.runner import run_experiment
 
-    test_runner = PythonTestRunner()
+    # If Docker mode is requested, use it as the underlying SandboxExecutor
+    if experiment_config.execution.sandbox_mode == "docker":
+        sandbox_executor = DockerSandboxExecutor(image_name="python:3.11-slim")
+        test_runner = PythonTestRunner(sandbox_executor=sandbox_executor)
+    else:
+        test_runner = PythonTestRunner()
 
     print(f"Starting experiment: {experiment_config.experiment_name}")
     print(f"Logs will be written to: {log_dir}/")

@@ -1,0 +1,17 @@
+provider: openai_compatible
+base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+api_key_env: QWEN_API_KEY
+models:
+  solver_primary: qwen-turbo
+  perturbation_generator: qwen-turbo
+  optional_secondary: ''
+request_defaults:
+  temperature: 0.3
+  top_p: 0.8
+  max_tokens: 1536
+  timeout_seconds: 60
+perturbation_defaults:
+  temperature: 0.3
+  top_p: 0.8
+  max_tokens: 1024
+  timeout_seconds: 60

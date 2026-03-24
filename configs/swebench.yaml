@@ -1,25 +1,28 @@
-# Configuration for SWE-bench Verified Research
-# Focus: Stage-wise fragility on real-world repositories
+experiment_name: "swebench_verified_stagewise_fragility"
+description: "Focus: Stage-wise fragility on real-world repositories"
+
+inherits: "configs/experiment_default.yaml"
 
 benchmark:
-  provider: "swebench_verified"
-  task_limit: 3  # Start with 3 tasks for validation
+  name: "swebench_verified"
+  dataset_source: "princeton-nlp/SWE-bench_Verified"
+  task_subset: "all"
+  selection_strategy: "first_n"
+  task_limit: 1  # Start with 1 for quick validation
 
-global_settings:
-  max_repair_rounds: 3
-  repeat_tasks: 1             # 1 for checkout, 3-5 for formal research
-  timeout_seconds: 300        # SWE-bench tests can take longer
+loop:
+  max_rounds: 3
+  use_rule_based_failure_summary: true
+
+repeats: 1
+
+execution:
+  timeout_seconds: 300
+  sandbox_mode: "docker"
+  capture_stdout: true
+  capture_stderr: true
 
 conditions:
-  - id: "clean"
-    injection_stage: "none"
-    
-  - id: "failure_paraphrase"
-    injection_stage: "failure_summary"
-    perturbation:
-      type: "semantic_paraphrase"
-      probability: 1.0
-
-model:
-  name: "deepseek-chat"
-  temperature: 0.1
+  enabled:
+    - "clean"
+    - "failure_paraphrase"

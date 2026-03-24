@@ -1,0 +1,17 @@
+provider: openai_compatible
+base_url: https://api.deepseek.com/v1
+api_key_env: DEEPSEEK_API_KEY
+models:
+  solver_primary: deepseek-chat
+  perturbation_generator: deepseek-chat
+  optional_secondary: ''
+request_defaults:
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 1536
+  timeout_seconds: 60
+perturbation_defaults:
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 1024
+  timeout_seconds: 60

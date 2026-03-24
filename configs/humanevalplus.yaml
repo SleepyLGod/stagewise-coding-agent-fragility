@@ -8,7 +8,7 @@ benchmark:
   dataset_source: "evalplus/humanevalplus"
   task_subset: "humanevalplus_main_20"
   selection_strategy: "fixed_manifest"
-  task_limit: 20
+  # task_limit: 20
 
 loop:
   max_rounds: 3

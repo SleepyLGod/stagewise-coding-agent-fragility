@@ -12,7 +12,7 @@ loop:
   max_rounds: 3
   use_rule_based_failure_summary: true
 
-repeats: 2
+repeats: 3
 
 logging:
   output_dir: "logs"
