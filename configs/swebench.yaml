@@ -1,0 +1,25 @@
+# Configuration for SWE-bench Verified Research
+# Focus: Stage-wise fragility on real-world repositories
+
+benchmark:
+  provider: "swebench_verified"
+  task_limit: 3  # Start with 3 tasks for validation
+
+global_settings:
+  max_repair_rounds: 3
+  repeat_tasks: 1             # 1 for checkout, 3-5 for formal research
+  timeout_seconds: 300        # SWE-bench tests can take longer
+
+conditions:
+  - id: "clean"
+    injection_stage: "none"
+    
+  - id: "failure_paraphrase"
+    injection_stage: "failure_summary"
+    perturbation:
+      type: "semantic_paraphrase"
+      probability: 1.0
+
+model:
+  name: "deepseek-chat"
+  temperature: 0.1

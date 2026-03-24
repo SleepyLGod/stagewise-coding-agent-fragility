@@ -2948,6 +2948,7 @@ name = "stagewise-coding-agent-fragility"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "datasets" },
     { name = "evalplus" },
     { name = "matplotlib" },
     { name = "openai" },
@@ -2963,6 +2964,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "datasets", specifier = ">=2.16.1" },
     { name = "evalplus", specifier = ">=0.3.1" },
     { name = "matplotlib", specifier = ">=3.8.0" },
     { name = "openai", specifier = ">=1.0" },
