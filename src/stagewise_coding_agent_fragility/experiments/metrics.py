@@ -35,18 +35,22 @@ class ConditionMetrics:
     average_total_tokens: float
     average_wall_clock_seconds: float
     recovery_rate: float | None
+    average_first_deviation_step: float | None = None
     failure_type_distribution: dict[str, float] = field(default_factory=dict)
 
 
 def compute_condition_metrics(
     condition_id: str,
     logs: list[RunLog],
+    baseline_logs: dict[tuple[str, int], RunLog] | None = None,
 ) -> ConditionMetrics:
     """Compute aggregate metrics for a set of runs sharing the same condition.
 
     Args:
         condition_id: Identifier for the condition being summarized.
         logs: Run logs for this condition.  Must be non-empty.
+        baseline_logs: Optional dictionary mapping ``(task_id, repeat_index)`` to
+            the control run log. Used to compute cross-run metrics like deviation.
 
     Returns:
         Computed ``ConditionMetrics``.
@@ -76,6 +80,20 @@ def compute_condition_metrics(
 
     failure_type_distribution = _compute_failure_type_distribution(failed)
 
+    first_deviations: list[int] = []
+    if baseline_logs is not None:
+        for log in logs:
+            key = (log.task_id, log.condition.repeat_index)
+            baseline_log = baseline_logs.get(key)
+            if baseline_log is not None:
+                dev_step = _find_first_deviation_step(log, baseline_log)
+                if dev_step is not None:
+                    first_deviations.append(dev_step)
+
+    average_first_deviation_step: float | None = None
+    if first_deviations:
+        average_first_deviation_step = sum(first_deviations) / len(first_deviations)
+
     return ConditionMetrics(
         condition_id=condition_id,
         num_runs=num_runs,
@@ -84,6 +102,7 @@ def compute_condition_metrics(
         average_total_tokens=average_total_tokens,
         average_wall_clock_seconds=average_wall_clock_seconds,
         recovery_rate=recovery_rate,
+        average_first_deviation_step=average_first_deviation_step,
         failure_type_distribution=failure_type_distribution,
     )
 
@@ -107,4 +126,29 @@ def _compute_failure_type_distribution(failed_logs: list[RunLog]) -> dict[str, f
 
     total = len(failed_logs)
     return {label: count / total for label, count in sorted(counts.items())}
+
+
+def _find_first_deviation_step(log: RunLog, baseline_log: RunLog) -> int | None:
+    """Find the first round index where the log deviates from the baseline.
+
+    Deviation occurs if generated code differs or execution outcome differs.
+
+    Args:
+        log: The run log to evaluate.
+        baseline_log: The control run log for the exact same task and repeat index.
+
+    Returns:
+        The round index of the first deviation, or None if they are identical
+        up to the length of the shorter run.
+    """
+    for r1, r2 in zip(log.rounds, baseline_log.rounds):
+        if r1.generated_code.strip() != r2.generated_code.strip():
+            return r1.round_index
+        if r1.execution_result.passed != r2.execution_result.passed:
+            return r1.round_index
+
+    if len(log.rounds) != len(baseline_log.rounds):
+        return min(len(log.rounds), len(baseline_log.rounds))
+
+    return None
 

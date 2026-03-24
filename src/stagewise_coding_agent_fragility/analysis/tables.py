@@ -20,6 +20,7 @@ _COLUMNS: list[str] = [
     "average_total_tokens",
     "average_wall_clock_seconds",
     "recovery_rate",
+    "average_first_deviation_step",
 ]
 
 
@@ -104,6 +105,7 @@ def _metrics_to_row(m: ConditionMetrics) -> dict[str, object]:
         "average_total_tokens": round(m.average_total_tokens, 1),
         "average_wall_clock_seconds": round(m.average_wall_clock_seconds, 2),
         "recovery_rate": round(m.recovery_rate, 4) if m.recovery_rate is not None else "N/A",
+        "average_first_deviation_step": round(m.average_first_deviation_step, 2) if m.average_first_deviation_step is not None else "N/A",
     }
 
 

@@ -17,11 +17,18 @@ from stagewise_coding_agent_fragility.logging.reader import load_run_logs
 from stagewise_coding_agent_fragility.logging.schema import RunLog
 
 
-def aggregate_logs(logs: list[RunLog]) -> dict[str, ConditionMetrics]:
+def aggregate_logs(
+    logs: list[RunLog],
+    baseline_condition_id: str = "clean",
+) -> dict[str, ConditionMetrics]:
     """Group logs by condition and compute metrics for each group.
+
+    If the baseline condition is present, it is used to compute cross-run
+    metrics like first_deviation_step for the other conditions.
 
     Args:
         logs: All run logs to aggregate.  May span multiple conditions.
+        baseline_condition_id: The ID of the condition to use as control.
 
     Returns:
         Mapping from ``condition_id`` to its ``ConditionMetrics``.
@@ -33,8 +40,20 @@ def aggregate_logs(logs: list[RunLog]) -> dict[str, ConditionMetrics]:
         raise ValueError("No logs to aggregate.")
 
     groups = _group_by_condition(logs)
+
+    baseline_logs: dict[tuple[str, int], RunLog] | None = None
+    if baseline_condition_id in groups:
+        baseline_logs = {
+            (log.task_id, log.condition.repeat_index): log
+            for log in groups[baseline_condition_id]
+        }
+
     return {
-        condition_id: compute_condition_metrics(condition_id, group_logs)
+        condition_id: compute_condition_metrics(
+            condition_id=condition_id,
+            logs=group_logs,
+            baseline_logs=baseline_logs if condition_id != baseline_condition_id else None,
+        )
         for condition_id, group_logs in groups.items()
     }
 

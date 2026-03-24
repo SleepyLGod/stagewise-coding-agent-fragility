@@ -68,6 +68,7 @@ def main() -> None:
         "average_total_tokens",
         "average_wall_clock_seconds",
         "recovery_rate",
+        "average_first_deviation_step",
         "failure_type_distribution",
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
@@ -88,16 +89,17 @@ def main() -> None:
     lines = [
         "# Experiment Summary",
         "",
-        "| Condition | Runs | Pass Rate | Avg Rounds | Avg Tokens | Avg Time (s) | Recovery Rate |",
-        "|---|---|---|---|---|---|---|",
+        "| Condition | Runs | Pass Rate | Avg Rounds | Avg Tokens | Avg Time (s) | Recovery Rate | Avg 1st Dev |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for condition_id in sorted(metrics_by_condition):
         m = metrics_by_condition[condition_id]
         recovery = f"{m.recovery_rate:.2f}" if m.recovery_rate is not None else "N/A"
+        dev = f"{m.average_first_deviation_step:.2f}" if m.average_first_deviation_step is not None else "N/A"
         lines.append(
             f"| {m.condition_id} | {m.num_runs} | {m.final_pass_rate:.2f} "
             f"| {m.average_repair_rounds:.1f} | {m.average_total_tokens:.0f} "
-            f"| {m.average_wall_clock_seconds:.1f} | {recovery} |"
+            f"| {m.average_wall_clock_seconds:.1f} | {recovery} | {dev} |"
         )
     lines.append("")
     md_path.write_text("\n".join(lines), encoding="utf-8")
@@ -109,12 +111,14 @@ def main() -> None:
     for condition_id in sorted(metrics_by_condition):
         m = metrics_by_condition[condition_id]
         recovery = f"{m.recovery_rate:.2f}" if m.recovery_rate is not None else "N/A"
+        dev = f"{m.average_first_deviation_step:.2f}" if m.average_first_deviation_step is not None else "N/A"
         print(
             f"  {m.condition_id:30s}  pass={m.final_pass_rate:.2f}  "
             f"rounds={m.average_repair_rounds:.1f}  "
             f"tokens={m.average_total_tokens:.0f}  "
             f"time={m.average_wall_clock_seconds:.1f}s  "
-            f"recovery={recovery}"
+            f"recovery={recovery}  "
+            f"dev={dev}"
         )
 
     sys.exit(0)
