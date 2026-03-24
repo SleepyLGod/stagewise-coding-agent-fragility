@@ -24,6 +24,9 @@ class ConditionMetrics:
         average_wall_clock_seconds: Mean wall-clock time per run.
         recovery_rate: Among runs whose first round failed, the fraction that
             eventually succeeded.  ``None`` if every run passed on round 0.
+        pass_rate_by_round: Cumulative pass rate at each round index (0-indexed).
+        average_first_deviation_step: Average round index where perturbed runs
+            diverged from the control runs.
         failure_type_distribution: Normalized distribution of ``failure_type``
             labels among failed runs.  Empty dict if all runs succeeded.
     """
@@ -35,6 +38,7 @@ class ConditionMetrics:
     average_total_tokens: float
     average_wall_clock_seconds: float
     recovery_rate: float | None
+    pass_rate_by_round: dict[int, float]
     average_first_deviation_step: float | None = None
     failure_type_distribution: dict[str, float] = field(default_factory=dict)
 
@@ -94,6 +98,15 @@ def compute_condition_metrics(
     if first_deviations:
         average_first_deviation_step = sum(first_deviations) / len(first_deviations)
 
+    max_rounds = max((len(log.rounds) for log in logs), default=0)
+    pass_rate_by_round: dict[int, float] = {}
+    for r in range(max_rounds):
+        passed_at_r = sum(
+            1 for log in logs
+            if log.final_result.success and log.final_result.num_rounds_executed <= r + 1
+        )
+        pass_rate_by_round[r] = passed_at_r / num_runs
+
     return ConditionMetrics(
         condition_id=condition_id,
         num_runs=num_runs,
@@ -102,6 +115,7 @@ def compute_condition_metrics(
         average_total_tokens=average_total_tokens,
         average_wall_clock_seconds=average_wall_clock_seconds,
         recovery_rate=recovery_rate,
+        pass_rate_by_round=pass_rate_by_round,
         average_first_deviation_step=average_first_deviation_step,
         failure_type_distribution=failure_type_distribution,
     )

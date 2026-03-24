@@ -71,7 +71,19 @@ uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
 
 This will output `summary.csv` and `summary.md` to the `results/` directory, showing pass rates, repair rounds, and token usage by condition.
 
-### 3. Run Tests
+### 3. Generate Visualizations
+
+To render the final pass rate, recovery rate, and survival curve charts from the logs:
+
+```bash
+uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
+    --log-dir logs \
+    --output-dir results/figures
+```
+
+This will save PNG plots in the `results/figures/` directory.
+
+### 4. Run Tests
 
 To verify the project is working as expected, run the test suite:
 

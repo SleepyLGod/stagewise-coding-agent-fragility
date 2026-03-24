@@ -69,6 +69,7 @@ def main() -> None:
         "average_wall_clock_seconds",
         "recovery_rate",
         "average_first_deviation_step",
+        "pass_rate_by_round",
         "failure_type_distribution",
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as fh:

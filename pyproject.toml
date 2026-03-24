@@ -8,6 +8,8 @@ dependencies = [
   "openai>=1.0",
   "python-dotenv>=1.2.2",
   "PyYAML>=6.0,<7.0",
+  "matplotlib>=3.8.0",
+  "seaborn>=0.13.0",
 ]
 
 [dependency-groups]
