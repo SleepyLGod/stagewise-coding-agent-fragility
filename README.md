@@ -39,6 +39,46 @@ stagewise-coding-agent-fragility/
 └── tests/
 ```
 
+## How to Run
+
+Before running, ensure your API keys are set in a `.env` file at the project root:
+
+```env
+DEEPSEEK_API_KEY="your-api-key-here"
+```
+
+### 1. Run an Experiment
+
+Run a configured experiment using the `run_experiment` CLI:
+
+```bash
+uv run python -m stagewise_coding_agent_fragility.cli.run_experiment \
+    --experiment-config configs/humanevalplus.yaml \
+    --models-config configs/models.yaml
+```
+
+This will execute the test-repair loop across all tasks and conditions, writing JSON logs to the `logs/` directory.
+
+### 2. Summarize Results
+
+Once an experiment completes, aggregate the JSON logs into CSV and Markdown tables:
+
+```bash
+uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+    --log-dir logs \
+    --output-dir results
+```
+
+This will output `summary.csv` and `summary.md` to the `results/` directory, showing pass rates, repair rounds, and token usage by condition.
+
+### 3. Run Tests
+
+To verify the project is working as expected, run the test suite:
+
+```bash
+uv run python -m pytest tests/ -v
+```
+
 ## Notes
 
 - `logs/` is for local experiment output and should not be committed by default.

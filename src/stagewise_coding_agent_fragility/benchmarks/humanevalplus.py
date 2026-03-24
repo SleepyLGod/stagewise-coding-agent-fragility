@@ -80,6 +80,35 @@ class HumanEvalPlusAdapter:
         assert self._tasks is not None
         return self._tasks[task_id]
 
+    def select_subset(
+        self,
+        task_limit: int = 0,
+        task_ids: list[str] | None = None,
+    ) -> list[Task]:
+        """Return a filtered subset of tasks.
+
+        If ``task_ids`` is provided, only those tasks (in given order) are
+        returned.  Otherwise, if ``task_limit > 0``, the first ``task_limit``
+        tasks (by benchmark ordering) are returned.  If neither filter
+        applies, all tasks are returned.
+
+        Args:
+            task_limit: Maximum number of tasks to return (0 = no limit).
+            task_ids: Explicit list of task IDs to include.
+
+        Returns:
+            Ordered list of selected ``Task`` objects.
+
+        Raises:
+            KeyError: If any of the given ``task_ids`` does not exist.
+        """
+        if task_ids is not None:
+            return [self.get_task(tid) for tid in task_ids]
+        all_tasks = list(self.load_tasks())
+        if task_limit > 0:
+            return all_tasks[:task_limit]
+        return all_tasks
+
     def _ensure_loaded(self) -> None:
         """Lazily load and cache tasks from ``evalplus``."""
         if self._tasks is not None:
@@ -102,4 +131,5 @@ class HumanEvalPlusAdapter:
                 },
             )
         self._tasks = converted
+
 

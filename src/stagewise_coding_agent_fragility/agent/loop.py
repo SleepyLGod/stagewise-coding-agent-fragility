@@ -125,8 +125,14 @@ def run_loop(
             )
             repair_prompt_text: str | None = None
         else:
-            perturbed_summary: str | None = perturb_fn(current_failure_summary) if should_perturb_summary else None
-            effective_summary = perturbed_summary if perturbed_summary is not None else current_failure_summary
+            # Perturb the failure summary exactly once and reuse for both the
+            # repair prompt and the round record, avoiding inconsistent LLM calls.
+            perturbed_summary: str | None = (
+                perturb_fn(current_failure_summary) if should_perturb_summary else None
+            )
+            effective_summary = (
+                perturbed_summary if perturbed_summary is not None else current_failure_summary
+            )
             repair_prompt_text = build_repair_prompt(
                 task_prompt=effective_task_prompt,
                 candidate_code=current_code,
@@ -142,7 +148,7 @@ def run_loop(
 
         current_code = extract_code(model_response.response_text)
         exec_result = test_runner.run(python_task, current_code, execution_timeout_seconds)
-        failure_summary_text, perturbed_failure_summary_text = _build_summaries(
+        failure_summary_text = _build_base_summary(
             current_code=current_code,
             exec_result=exec_result,
             use_rule_based=use_rule_based_failure_summary,
@@ -150,9 +156,12 @@ def run_loop(
             model_temperature=model_temperature,
             model_max_tokens=model_max_tokens,
             model_timeout_seconds=model_timeout_seconds,
-            should_perturb_summary=should_perturb_summary,
-            perturb_fn=perturb_fn,
         )
+        # Perturb this round's failure summary once — the result will be used
+        # by the *next* repair round and is also stored in the round record.
+        perturbed_failure_summary_text: str | None = None
+        if should_perturb_summary and perturb_fn is not None and not exec_result.passed:
+            perturbed_failure_summary_text = perturb_fn(failure_summary_text)
         current_failure_summary = failure_summary_text
 
         round_record = _build_round_record(
@@ -180,7 +189,7 @@ def run_loop(
 # ---------------------------------------------------------------------------
 
 
-def _build_summaries(
+def _build_base_summary(
     current_code: str,
     exec_result: ExecutionResult,
     use_rule_based: bool,
@@ -188,34 +197,29 @@ def _build_summaries(
     model_temperature: float,
     model_max_tokens: int,
     model_timeout_seconds: float,
-    should_perturb_summary: bool,
-    perturb_fn: Callable[[str], str] | None,
-) -> tuple[str, str | None]:
-    """Build the base and optionally perturbed failure summary for one round.
+) -> str:
+    """Build the base failure summary for one round.
+
+    Perturbation is handled by the caller so that each summary is perturbed
+    at most once.
 
     Returns:
-        A tuple of ``(base_summary, perturbed_summary_or_none)``.
+        The base failure summary text.
     """
     if exec_result.passed:
-        base_summary = "All tests passed."
-    elif use_rule_based:
-        base_summary = fs_module.summarize_failure_rule_based(exec_result)
-    else:
-        assert failure_summary_model is not None  # guaranteed by run_loop pre-check
-        base_summary, _ = fs_module.summarize_failure_with_model(
-            candidate_code=current_code,
-            result=exec_result,
-            model=failure_summary_model,
-            temperature=model_temperature,
-            max_tokens=model_max_tokens,
-            timeout_seconds=model_timeout_seconds,
-        )
-
-    perturbed: str | None = None
-    if should_perturb_summary and perturb_fn is not None and not exec_result.passed:
-        perturbed = perturb_fn(base_summary)
-
-    return base_summary, perturbed
+        return "All tests passed."
+    if use_rule_based:
+        return fs_module.summarize_failure_rule_based(exec_result)
+    assert failure_summary_model is not None  # guaranteed by run_loop pre-check
+    base_summary, _ = fs_module.summarize_failure_with_model(
+        candidate_code=current_code,
+        result=exec_result,
+        model=failure_summary_model,
+        temperature=model_temperature,
+        max_tokens=model_max_tokens,
+        timeout_seconds=model_timeout_seconds,
+    )
+    return base_summary
 
 
 def _build_round_record(

@@ -12,7 +12,7 @@ from stagewise_coding_agent_fragility.models.base import ModelClient
 from stagewise_coding_agent_fragility.models.response_types import ModelResponse
 
 # Matches a fenced code block: ```python ... ``` or ``` ... ```
-_CODE_BLOCK_RE = re.compile(r"```(?:python)?\n(.*?)```", re.DOTALL)
+_CODE_BLOCK_RE = re.compile(r"```(?:python)?[ \t]*\n(.*?)```", re.DOTALL | re.IGNORECASE)
 
 
 def solve(

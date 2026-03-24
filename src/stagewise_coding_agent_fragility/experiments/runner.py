@@ -24,6 +24,7 @@ from stagewise_coding_agent_fragility.experiments.planner import RunPlan
 from stagewise_coding_agent_fragility.logging.schema import (
     ConditionRecord,
     CostRecord,
+    FinalResultRecord,
     LoopConfigRecord,
     RoundRecord,
     RunLog,
@@ -156,7 +157,7 @@ def _build_perturb_fn(
 def _assemble_run_log(
     plan: RunPlan,
     rounds: list[RoundRecord],
-    loop_result_final: object,
+    loop_result_final: FinalResultRecord,
     loop_config: LoopConfig,
     solver_model_name: str,
     wall_seconds: float,
