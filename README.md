@@ -61,15 +61,17 @@ This will execute the test-repair loop across all tasks and conditions, writing 
 
 ### 2. Summarize Results
 
-Once an experiment completes, aggregate the JSON logs into CSV and Markdown tables:
+Once an experiment completes, aggregate the JSON logs into CSV and Markdown tables.
+Pass the **exact timestamped run directory** so results stay bound to one run:
 
 ```bash
 uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
-    --log-dir logs \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459 \
     --output-dir results
 ```
 
 This will output `summary.csv` and `summary.md` to the `results/` directory, showing pass rates, repair rounds, and token usage by condition.
+If you intentionally want the newest child under `logs/`, add `--latest` explicitly.
 
 ### 3. Generate Visualizations
 
@@ -77,11 +79,15 @@ To render the final pass rate, recovery rate, and survival curve charts from the
 
 ```bash
 uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
-    --log-dir logs \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459 \
     --output-dir results/figures
 ```
 
 This will save PNG plots in the `results/figures/` directory.
+
+For split runs such as `results/` vs `results/test-chat/`, make sure each output
+directory is generated from its matching log directory rather than from the same
+parent `logs/` path.
 
 ### 4. Run Tests
 

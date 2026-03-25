@@ -13,26 +13,11 @@ import argparse
 import sys
 from pathlib import Path
 
-
-def _find_latest_log_dir(base_dir: Path) -> Path:
-    """Find the most recently modified subdirectory in base_dir."""
-    if not base_dir.exists() or not base_dir.is_dir():
-        return base_dir
-    
-    # If the directory directly contains json files, return it
-    if list(base_dir.glob("*.json")):
-        return base_dir
-        
-    subdirs = [d for d in base_dir.iterdir() if d.is_dir()]
-    if not subdirs:
-        return base_dir
-        
-    return max(subdirs, key=lambda d: d.stat().st_mtime)
-
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from stagewise_coding_agent_fragility.cli.log_dir import resolve_log_dir
 from stagewise_coding_agent_fragility.experiments.aggregation import aggregate_from_dir
 from stagewise_coding_agent_fragility.experiments.metrics import ConditionMetrics
 
@@ -54,6 +39,11 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--output-dir",
         default="results/figures",
         help="Directory where figures will be saved.",
+    )
+    parser.add_argument(
+        "--latest",
+        action="store_true",
+        help="Explicitly select the newest child directory under --log-dir.",
     )
     return parser
 
@@ -160,7 +150,7 @@ def plot_first_deviation_step(
     sns.barplot(x=conditions, y=dev_steps, ax=ax, palette="viridis")
 
     ax.set_ylabel('Average First Deviation Step')
-    ax.set_title('When Dependencies Diverge from Clean Run')
+    ax.set_title('When Execution Trajectories Diverge from Clean Run')
     ax.set_xticklabels(conditions, rotation=45, ha="right")
     
     plt.tight_layout()
@@ -176,15 +166,16 @@ def main() -> None:
     args = parser.parse_args()
 
     raw_log_dir = Path(args.log_dir)
-    log_dir = _find_latest_log_dir(raw_log_dir)
     output_dir = Path(args.output_dir)
 
-    if not log_dir.is_dir():
-        print(f"Error: log directory does not exist: {log_dir}", file=sys.stderr)
+    try:
+        log_dir = resolve_log_dir(raw_log_dir, latest=args.latest)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    if log_dir != raw_log_dir:
-        print(f"Auto-selected latest log directory: {log_dir}")
+    if args.latest and log_dir != raw_log_dir:
+        print(f"Selected latest log directory: {log_dir}")
 
     print(f"Loading logs from: {log_dir}/")
     metrics_by_condition = aggregate_from_dir(log_dir)

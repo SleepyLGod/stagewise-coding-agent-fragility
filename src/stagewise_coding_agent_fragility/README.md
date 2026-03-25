@@ -52,9 +52,10 @@ This repository provides a robust, lightweight scaffold for studying **stage-wis
 
 3. **Analyze Results**:
    ```bash
-   # Both tools auto-select the latest timestamped folder in logs/
-   uv run python -m stagewise_coding_agent_fragility.cli.summarize_results
-   uv run python -m stagewise_coding_agent_fragility.cli.generate_figures
+   uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+       --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
+   uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
+       --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
    ```
 
 ---
@@ -86,13 +87,18 @@ uv run python -m stagewise_coding_agent_fragility.cli.run_experiment \
 ### Timestamped Logs
 Each experiment run creates a unique subdirectory in `logs/` (e.g., `logs/humanevalplus_20240325_010000/`). This prevents logs from different experiments from overwriting each other.
 
-### Auto-Detection
-The analysis tools (`summarize_results` and `generate_figures`) are equipped with **Latest-Folder Detection**. By default, they will scan the `logs/` directory and use the most recently created experiment folder. 
+### Analysis Path Binding
+The analysis tools (`summarize_results` and `generate_figures`) now require a
+directory that directly contains JSON run logs. This prevents accidentally
+mixing one run's figures with another run's summary.
 
-If you wish to analyze a specific past run, pass the exact path:
+If you want a specific past run, pass the exact path:
 ```bash
 uv run python -m stagewise_coding_agent_fragility.cli.summarize_results --log-dir logs/my_old_run
 ```
+
+If you intentionally want the newest eligible child directory under `logs/`,
+add `--latest` explicitly.
 
 ---
 
