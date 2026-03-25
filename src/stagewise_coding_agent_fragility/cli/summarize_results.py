@@ -28,8 +28,11 @@ def build_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-dir",
-        default="results",
-        help="Directory where summary files will be written.",
+        default=None,
+        help=(
+            "Directory where summary files will be written. "
+            "Defaults to results/<log-dir-name>/."
+        ),
     )
     parser.add_argument(
         "--latest",
@@ -45,7 +48,6 @@ def main() -> None:
     args = parser.parse_args()
 
     raw_log_dir = Path(args.log_dir)
-    output_dir = Path(args.output_dir)
 
     try:
         log_dir = resolve_log_dir(raw_log_dir, latest=args.latest)
@@ -55,6 +57,8 @@ def main() -> None:
 
     if args.latest and log_dir != raw_log_dir:
         print(f"Selected latest log directory: {log_dir}")
+
+    output_dir = Path(args.output_dir) if args.output_dir else Path("results") / log_dir.name
 
     from stagewise_coding_agent_fragility.experiments.aggregation import (
         aggregate_from_dir,

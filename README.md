@@ -62,15 +62,16 @@ This will execute the test-repair loop across all tasks and conditions, writing 
 ### 2. Summarize Results
 
 Once an experiment completes, aggregate the JSON logs into CSV and Markdown tables.
-Pass the **exact timestamped run directory** so results stay bound to one run:
+Pass the **exact timestamped run directory**:
 
 ```bash
 uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
-    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459 \
-    --output-dir results
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
 ```
 
-This will output `summary.csv` and `summary.md` to the `results/` directory, showing pass rates, repair rounds, and token usage by condition.
+This will output `summary.csv` and `summary.md` to `results/<log-dir-name>/`, automatically binding the output to the input run.
+
+If you want a different output location, pass `--output-dir` explicitly.
 If you intentionally want the newest child under `logs/`, add `--latest` explicitly.
 
 ### 3. Generate Visualizations
@@ -79,15 +80,28 @@ To render the final pass rate, recovery rate, and survival curve charts from the
 
 ```bash
 uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
-    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459 \
-    --output-dir results/figures
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
 ```
 
-This will save PNG plots in the `results/figures/` directory.
+This will save PNG plots in `results/<log-dir-name>/figures/`, automatically binding the output to the input run.
 
-For split runs such as `results/` vs `results/test-chat/`, make sure each output
-directory is generated from its matching log directory rather than from the same
-parent `logs/` path.
+**Example**: If you have two separate runs (e.g., `ds-chat` and `ds-reasoner`), just point each CLI call to the corresponding log directory:
+
+```bash
+# Analyze ds-chat run
+uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
+uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
+
+# Analyze ds-reasoner run
+uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_013346
+uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_013346
+```
+
+Results will be automatically organized under `results/humanevalplus_stagewise_fragility_20260325_014459/` and `results/humanevalplus_stagewise_fragility_20260325_013346/` respectively, preventing accidental mixing.
 
 ### 4. Run Tests
 

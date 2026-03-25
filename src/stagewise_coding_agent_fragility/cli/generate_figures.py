@@ -37,8 +37,11 @@ def build_argument_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-dir",
-        default="results/figures",
-        help="Directory where figures will be saved.",
+        default=None,
+        help=(
+            "Directory where figures will be saved. "
+            "Defaults to results/<log-dir-name>/figures/."
+        ),
     )
     parser.add_argument(
         "--latest",
@@ -166,7 +169,6 @@ def main() -> None:
     args = parser.parse_args()
 
     raw_log_dir = Path(args.log_dir)
-    output_dir = Path(args.output_dir)
 
     try:
         log_dir = resolve_log_dir(raw_log_dir, latest=args.latest)
@@ -176,6 +178,10 @@ def main() -> None:
 
     if args.latest and log_dir != raw_log_dir:
         print(f"Selected latest log directory: {log_dir}")
+
+    output_dir = (
+        Path(args.output_dir) if args.output_dir else Path("results") / log_dir.name / "figures"
+    )
 
     print(f"Loading logs from: {log_dir}/")
     metrics_by_condition = aggregate_from_dir(log_dir)

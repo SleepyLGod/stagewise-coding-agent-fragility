@@ -52,6 +52,7 @@ This repository provides a robust, lightweight scaffold for studying **stage-wis
 
 3. **Analyze Results**:
    ```bash
+   # Summary tables and figures will be automatically placed under results/<log-dir-name>/
    uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
        --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
    uv run python -m stagewise_coding_agent_fragility.cli.generate_figures \
@@ -88,17 +89,31 @@ uv run python -m stagewise_coding_agent_fragility.cli.run_experiment \
 Each experiment run creates a unique subdirectory in `logs/` (e.g., `logs/humanevalplus_20240325_010000/`). This prevents logs from different experiments from overwriting each other.
 
 ### Analysis Path Binding
-The analysis tools (`summarize_results` and `generate_figures`) now require a
-directory that directly contains JSON run logs. This prevents accidentally
-mixing one run's figures with another run's summary.
 
-If you want a specific past run, pass the exact path:
+The analysis tools (`summarize_results` and `generate_figures`) automatically organize output under `results/<log-dir-name>/`, binding each analysis to its source run. This prevents accidentally mixing results from different experiments.
+
+**Default behavior**:
 ```bash
-uv run python -m stagewise_coding_agent_fragility.cli.summarize_results --log-dir logs/my_old_run
+# Input:  logs/humanevalplus_stagewise_fragility_20260325_014459/
+# Output: results/humanevalplus_stagewise_fragility_20260325_014459/
+uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+    --log-dir logs/humanevalplus_stagewise_fragility_20260325_014459
 ```
 
-If you intentionally want the newest eligible child directory under `logs/`,
-add `--latest` explicitly.
+**Custom output location**:
+```bash
+uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+    --log-dir logs/my_run \
+    --output-dir custom_results/my_analysis
+```
+
+**Auto-select latest run**:
+```bash
+# Explicitly select the newest child directory under logs/
+uv run python -m stagewise_coding_agent_fragility.cli.summarize_results \
+    --log-dir logs \
+    --latest
+```
 
 ---
 
