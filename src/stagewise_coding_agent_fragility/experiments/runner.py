@@ -142,7 +142,11 @@ def _build_perturb_fn(
     perturbation_type = condition.perturbation_type
 
     def _perturb(text: str) -> str:
-        prompt = build_perturbation_prompt(text, perturbation_type)
+        prompt = build_perturbation_prompt(
+            text=text,
+            perturbation_type=perturbation_type,
+            injection_stage=condition.injection_stage,
+        )
         response = perturber_model.complete(
             prompt,
             temperature=perturbation_defaults.temperature,

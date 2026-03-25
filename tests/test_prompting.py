@@ -102,28 +102,52 @@ def test_build_failure_summary_prompt_handles_empty_failure() -> None:
 
 def test_build_perturbation_prompt_semantic_paraphrase() -> None:
     """build_perturbation_prompt returns a non-empty prompt for semantic_paraphrase."""
-    prompt = build_perturbation_prompt("Return the sum of a and b.", "semantic_paraphrase")
+    prompt = build_perturbation_prompt(
+        "Return the sum of a and b.",
+        "semantic_paraphrase",
+        "task_prompt",
+    )
     assert "Return the sum of a and b." in prompt
+    assert "Injection stage: task_prompt" in prompt
     assert len(prompt) > 0
 
 
 def test_build_perturbation_prompt_mild_simplification() -> None:
     """build_perturbation_prompt returns a non-empty prompt for mild_simplification."""
-    prompt = build_perturbation_prompt("Return the sum of a and b.", "mild_simplification")
-    assert "Return the sum of a and b." in prompt
+    prompt = build_perturbation_prompt(
+        "AssertionError: expected 3, got -1",
+        "mild_simplification",
+        "failure_summary",
+    )
+    assert "AssertionError: expected 3, got -1" in prompt
+
+
+def test_build_perturbation_prompt_is_stage_aware() -> None:
+    """Different injection stages should produce different instructions."""
+    task_prompt = build_perturbation_prompt("x", "semantic_paraphrase", "task_prompt")
+    failure_prompt = build_perturbation_prompt("x", "semantic_paraphrase", "failure_summary")
+
+    assert "copy them exactly" in task_prompt
+    assert "causal chain" in failure_prompt
 
 
 def test_build_perturbation_prompt_rejects_unknown_type() -> None:
     """build_perturbation_prompt raises ValueError for unknown perturbation types."""
     with pytest.raises(ValueError, match="Unsupported perturbation_type"):
-        build_perturbation_prompt("some text", "totally_unknown_type")
+        build_perturbation_prompt("some text", "totally_unknown_type", "task_prompt")
+
+
+def test_build_perturbation_prompt_rejects_unknown_stage() -> None:
+    """build_perturbation_prompt raises ValueError for unknown stages."""
+    with pytest.raises(ValueError, match="Unsupported injection_stage"):
+        build_perturbation_prompt("some text", "semantic_paraphrase", "revision_prompt")
 
 
 def test_build_perturbation_prompt_deterministic() -> None:
     """build_perturbation_prompt is deterministic."""
     text = "Compute the factorial of n."
     assert (
-        build_perturbation_prompt(text, "semantic_paraphrase")
-        == build_perturbation_prompt(text, "semantic_paraphrase")
+        build_perturbation_prompt(text, "semantic_paraphrase", "task_prompt")
+        == build_perturbation_prompt(text, "semantic_paraphrase", "task_prompt")
     )
 

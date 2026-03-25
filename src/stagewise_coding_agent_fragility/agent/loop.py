@@ -112,7 +112,7 @@ def run_loop(
     python_task = PythonTestTask(task_id=task.task_id, test_code=task.test_code)
     rounds: list[RoundRecord] = []
     current_code = ""
-    current_failure_summary = ""
+    current_failure_summary_for_repair = ""
 
     for round_index in range(max_rounds):
         if round_index == 0:
@@ -125,18 +125,10 @@ def run_loop(
             )
             repair_prompt_text: str | None = None
         else:
-            # Perturb the failure summary exactly once and reuse for both the
-            # repair prompt and the round record, avoiding inconsistent LLM calls.
-            perturbed_summary: str | None = (
-                perturb_fn(current_failure_summary) if should_perturb_summary else None
-            )
-            effective_summary = (
-                perturbed_summary if perturbed_summary is not None else current_failure_summary
-            )
             repair_prompt_text = build_repair_prompt(
                 task_prompt=effective_task_prompt,
                 candidate_code=current_code,
-                failure_summary=effective_summary,
+                failure_summary=current_failure_summary_for_repair,
             )
             model_response = repair(
                 repair_prompt_text,
@@ -162,7 +154,11 @@ def run_loop(
         perturbed_failure_summary_text: str | None = None
         if should_perturb_summary and perturb_fn is not None and not exec_result.passed:
             perturbed_failure_summary_text = perturb_fn(failure_summary_text)
-        current_failure_summary = failure_summary_text
+        current_failure_summary_for_repair = (
+            perturbed_failure_summary_text
+            if perturbed_failure_summary_text is not None
+            else failure_summary_text
+        )
 
         round_record = _build_round_record(
             round_index=round_index,

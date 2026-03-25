@@ -269,3 +269,33 @@ def test_run_loop_perturbs_failure_summary() -> None:
     assert result.rounds[0].perturbed_failure_summary_text is not None
     assert result.rounds[0].perturbed_failure_summary_text.startswith("PERTURBED:")
 
+
+def test_run_loop_reuses_recorded_failure_summary_perturbation() -> None:
+    """Loop should perturb one failure summary once and reuse it in the repair prompt."""
+    condition = ConditionConfig(
+        condition_id="failure_paraphrase",
+        injection_stage="failure_summary",
+        perturbation_type="semantic_paraphrase",
+        perturbation_strength="default",
+    )
+    model = _make_mock_model()
+    runner = _make_mock_runner([_FAILING_RESULT, _PASSING_RESULT])
+    seen_inputs: list[str] = []
+
+    def perturb_fn(text: str) -> str:
+        seen_inputs.append(text)
+        return f"PERTURBED[{len(seen_inputs)}]: {text}"
+
+    result = run_loop(
+        task=_SAMPLE_TASK, condition=condition,
+        solver_model=model, test_runner=runner,
+        max_rounds=3, execution_timeout_seconds=5.0,
+        model_temperature=0.1, model_max_tokens=256, model_timeout_seconds=30.0,
+        use_rule_based_failure_summary=True,
+        perturb_fn=perturb_fn,
+    )
+
+    assert len(seen_inputs) == 1
+    assert result.rounds[0].perturbed_failure_summary_text is not None
+    assert result.rounds[0].perturbed_failure_summary_text in result.rounds[1].repair_prompt_text
+

@@ -4,13 +4,14 @@ logging writer/reader round-trip."""
 from __future__ import annotations
 
 import tempfile
+from types import SimpleNamespace
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from stagewise_coding_agent_fragility.benchmarks.base import Task
-from stagewise_coding_agent_fragility.config.schema import ConditionConfig
+from stagewise_coding_agent_fragility.config.schema import ConditionConfig, ModelRequestDefaults
 from stagewise_coding_agent_fragility.experiments.aggregation import (
     aggregate_from_dir,
     aggregate_logs,
@@ -24,6 +25,7 @@ from stagewise_coding_agent_fragility.experiments.planner import (
     RunPlan,
     build_run_plans,
 )
+from stagewise_coding_agent_fragility.experiments.runner import _build_perturb_fn
 from stagewise_coding_agent_fragility.logging.reader import load_run_log, load_run_logs
 from stagewise_coding_agent_fragility.logging.schema import (
     ConditionRecord,
@@ -126,6 +128,78 @@ def _make_run_log(
             total_tokens=total_tokens * num_rounds,
         ),
         timing=TimingRecord(wall_clock_seconds=wall_seconds),
+    )
+
+
+def _make_trajectory_log(
+    run_id: str,
+    condition_id: str,
+    injection_stage: str,
+    perturbation_type: str,
+    generated_codes: list[str],
+    raw_failures: list[str],
+    passed_flags: list[bool],
+) -> RunLog:
+    rounds: list[RoundRecord] = []
+    for index, (code, raw_failure, passed) in enumerate(
+        zip(generated_codes, raw_failures, passed_flags, strict=True)
+    ):
+        rounds.append(
+            RoundRecord(
+                round_index=index,
+                task_prompt_text="prompt",
+                perturbed_task_prompt_text=None,
+                generated_code=code,
+                execution_result=ExecutionResultRecord(
+                    passed=passed,
+                    stdout="",
+                    stderr="",
+                    timeout=False,
+                    runtime_seconds=0.1,
+                    raw_failure=raw_failure,
+                    parsed_failure=None,
+                ),
+                failure_summary_text="summary",
+                perturbed_failure_summary_text=None,
+                repair_prompt_text=None if index == 0 else "repair prompt",
+                model_name="deepseek-chat",
+                raw_model_response=code,
+                token_usage=TokenUsage(
+                    prompt_tokens=10,
+                    completion_tokens=20,
+                    total_tokens=30,
+                ),
+                latency_seconds=0.5,
+            )
+        )
+
+    return RunLog(
+        run_id=run_id,
+        benchmark="humanevalplus",
+        task_id="HumanEval/0",
+        condition=ConditionRecord(
+            condition_id=condition_id,
+            injection_stage=injection_stage,
+            perturbation_type=perturbation_type,
+            perturbation_strength="default",
+            model_name="deepseek-chat",
+            repeat_index=0,
+        ),
+        loop_config=LoopConfigRecord(max_rounds=3),
+        rounds=rounds,
+        final_result=FinalResultRecord(
+            success=passed_flags[-1],
+            num_rounds_executed=len(rounds),
+            first_deviation_step=None,
+            recovered=None,
+            failure_type=None,
+        ),
+        cost=CostRecord(
+            prompt_tokens=10 * len(rounds),
+            completion_tokens=20 * len(rounds),
+            total_tokens=30 * len(rounds),
+        ),
+        timing=TimingRecord(wall_clock_seconds=1.0),
     )
 
 
@@ -254,6 +328,100 @@ def test_compute_condition_metrics_averages() -> None:
     # total_tokens is multiplied by num_rounds (1) in _make_run_log
     assert m.average_total_tokens == 15.0
     assert m.average_wall_clock_seconds == 2.0
+
+
+def test_compute_condition_metrics_ignores_round_zero_code_only_differences() -> None:
+    """Deviation should not fire solely because round-0 code text differs."""
+    baseline = _make_trajectory_log(
+        run_id="baseline",
+        condition_id="clean",
+        injection_stage="none",
+        perturbation_type="none",
+        generated_codes=["def add(a, b): return a + b"],
+        raw_failures=[""],
+        passed_flags=[True],
+    )
+    perturbed = _make_trajectory_log(
+        run_id="perturbed",
+        condition_id="task_paraphrase",
+        injection_stage="task_prompt",
+        perturbation_type="semantic_paraphrase",
+        generated_codes=["def add(x, y): return x + y"],
+        raw_failures=[""],
+        passed_flags=[True],
+    )
+
+    metrics = compute_condition_metrics(
+        "task_paraphrase",
+        [perturbed],
+        baseline_logs={(baseline.task_id, baseline.condition.repeat_index): baseline},
+    )
+    assert metrics.average_first_deviation_step is None
+
+
+def test_compute_condition_metrics_starts_failure_summary_deviation_at_round_one() -> None:
+    """Failure-summary deviation should start at the first repair round."""
+    baseline = _make_trajectory_log(
+        run_id="baseline",
+        condition_id="clean",
+        injection_stage="none",
+        perturbation_type="none",
+        generated_codes=["code0", "code1"],
+        raw_failures=["AssertionError: got -1", ""],
+        passed_flags=[False, True],
+    )
+    perturbed = _make_trajectory_log(
+        run_id="perturbed",
+        condition_id="failure_paraphrase",
+        injection_stage="failure_summary",
+        perturbation_type="semantic_paraphrase",
+        generated_codes=["code0-alt", "code1-alt"],
+        raw_failures=["AssertionError: got -1", "AssertionError: got 0"],
+        passed_flags=[False, False],
+    )
+
+    metrics = compute_condition_metrics(
+        "failure_paraphrase",
+        [perturbed],
+        baseline_logs={(baseline.task_id, baseline.condition.repeat_index): baseline},
+    )
+    assert metrics.average_first_deviation_step == 1.0
+
+
+def test_build_perturb_fn_passes_injection_stage_to_prompt_builder() -> None:
+    """Runner should build perturbation prompts with the condition's stage."""
+    condition = ConditionConfig(
+        condition_id="failure_simplification",
+        injection_stage="failure_summary",
+        perturbation_type="mild_simplification",
+        perturbation_strength="default",
+    )
+    perturber_model = MagicMock()
+    perturber_model.complete.return_value = SimpleNamespace(response_text="rewritten")
+
+    with patch(
+        "stagewise_coding_agent_fragility.experiments.runner.build_perturbation_prompt",
+        return_value="PROMPT",
+    ) as build_prompt:
+        perturb_fn = _build_perturb_fn(
+            condition=condition,
+            perturber_model=perturber_model,
+            perturbation_defaults=ModelRequestDefaults(
+                temperature=0.0,
+                top_p=1.0,
+                max_tokens=128,
+                timeout_seconds=30,
+            ),
+        )
+        assert perturb_fn is not None
+        rewritten = perturb_fn("summary text")
+
+    build_prompt.assert_called_once_with(
+        text="summary text",
+        perturbation_type="mild_simplification",
+        injection_stage="failure_summary",
+    )
+    assert rewritten == "rewritten"
 
 
 # ---------------------------------------------------------------------------

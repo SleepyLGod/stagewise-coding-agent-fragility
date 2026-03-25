@@ -25,8 +25,9 @@ class ConditionMetrics:
         recovery_rate: Among runs whose first round failed, the fraction that
             eventually succeeded.  ``None`` if every run passed on round 0.
         pass_rate_by_round: Cumulative pass rate at each round index (0-indexed).
-        average_first_deviation_step: Average round index where perturbed runs
-            diverged from the control runs.
+        average_first_deviation_step: Average round index where a perturbed run's
+            observable execution trajectory diverged from the control run after
+            the injection point.
         failure_type_distribution: Normalized distribution of ``failure_type``
             labels among failed runs.  Empty dict if all runs succeeded.
     """
@@ -143,26 +144,50 @@ def _compute_failure_type_distribution(failed_logs: list[RunLog]) -> dict[str, f
 
 
 def _find_first_deviation_step(log: RunLog, baseline_log: RunLog) -> int | None:
-    """Find the first round index where the log deviates from the baseline.
+    """Find the first round index where the execution trajectory diverges.
 
-    Deviation occurs if generated code differs or execution outcome differs.
+    This metric intentionally ignores raw code-text differences, because prompt
+    perturbations naturally change code surface form. Instead it compares the
+    observable execution trajectory: pass/fail state, timeout state, and raw
+    failure evidence. For ``failure_summary`` injection, round 0 is skipped
+    because the perturbation only begins affecting behavior on the first repair
+    round.
 
     Args:
         log: The run log to evaluate.
         baseline_log: The control run log for the exact same task and repeat index.
 
     Returns:
-        The round index of the first deviation, or None if they are identical
-        up to the length of the shorter run.
+        The round index of the first observable divergence, or None if they are
+        identical from the first affected round onward.
     """
-    for r1, r2 in zip(log.rounds, baseline_log.rounds):
-        if r1.generated_code.strip() != r2.generated_code.strip():
-            return r1.round_index
-        if r1.execution_result.passed != r2.execution_result.passed:
-            return r1.round_index
+    start_round = 1 if log.condition.injection_stage == "failure_summary" else 0
+    comparable_rounds = min(len(log.rounds), len(baseline_log.rounds))
 
-    if len(log.rounds) != len(baseline_log.rounds):
-        return min(len(log.rounds), len(baseline_log.rounds))
+    for round_index in range(start_round, comparable_rounds):
+        if _execution_trajectory_differs(log, baseline_log, round_index):
+            return round_index
+
+    if len(log.rounds) != len(baseline_log.rounds) and comparable_rounds >= start_round:
+        return comparable_rounds
 
     return None
+
+
+def _execution_trajectory_differs(
+    log: RunLog,
+    baseline_log: RunLog,
+    round_index: int,
+) -> bool:
+    """Return whether one round shows a different observable test outcome."""
+    run_round = log.rounds[round_index]
+    baseline_round = baseline_log.rounds[round_index]
+    run_result = run_round.execution_result
+    baseline_result = baseline_round.execution_result
+
+    if run_result.passed != baseline_result.passed:
+        return True
+    if run_result.timeout != baseline_result.timeout:
+        return True
+    return run_result.raw_failure.strip() != baseline_result.raw_failure.strip()
 
