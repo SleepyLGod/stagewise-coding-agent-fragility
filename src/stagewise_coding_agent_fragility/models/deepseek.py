@@ -1,11 +1,13 @@
-"""DeepSeek model client.
+"""OpenAI-compatible model client.
 
-Uses the OpenAI-compatible DeepSeek API via the ``openai`` SDK.
-All DeepSeek-specific logic is confined to this module.
+Uses the ``openai`` SDK against an OpenAI-compatible endpoint.
+The current project keeps the historical ``DeepSeekClient`` name because that
+was the first provider wired into the repo, but the client itself is
+parameterized by base URL and API-key environment variable.
 
 API key resolution order:
 1. Explicit ``api_key`` argument passed to the constructor.
-2. ``DEEPSEEK_API_KEY`` environment variable.
+2. The configured API-key environment variable.
 3. ``.env`` file in the current working directory (loaded automatically as a
    last-resort fallback via ``python-dotenv``).
 
@@ -29,12 +31,13 @@ _DEFAULT_BASE_URL = "https://api.deepseek.com"
 
 
 class DeepSeekClient:
-    """OpenAI-compatible client for the DeepSeek API.
+    """OpenAI-compatible client for model providers.
 
     Args:
-        model_name: DeepSeek model identifier (e.g. ``"deepseek-reasoner"``).
+        model_name: Provider model identifier (e.g. ``"deepseek-reasoner"``).
         api_key: Explicit API key.  If ``None``, resolved from the environment.
-        base_url: API base URL.  Defaults to the official DeepSeek endpoint.
+        base_url: Provider API base URL.
+        api_key_env: Environment variable name used to resolve the API key.
     """
 
     def __init__(
@@ -43,16 +46,17 @@ class DeepSeekClient:
         *,
         api_key: str | None = None,
         base_url: str = _DEFAULT_BASE_URL,
+        api_key_env: str = "DEEPSEEK_API_KEY",
     ) -> None:
-        resolved_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
+        resolved_key = api_key or os.environ.get(api_key_env)
         if not resolved_key:
             # Last resort: try to load a .env file then re-check.
             load_dotenv()
-            resolved_key = os.environ.get("DEEPSEEK_API_KEY")
+            resolved_key = os.environ.get(api_key_env)
         if not resolved_key:
             raise ValueError(
-                "DeepSeek API key not found. "
-                "Set DEEPSEEK_API_KEY in your environment or .env file."
+                f"API key not found. Set {api_key_env} in your environment "
+                "or .env file."
             )
 
         self._model_name = model_name
@@ -128,4 +132,3 @@ def _serialize_completion(raw: Any) -> dict[str, Any]:
         return raw.model_dump()
     except AttributeError:
         return {}
-

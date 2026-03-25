@@ -59,6 +59,7 @@ def main() -> None:
     solver_model = DeepSeekClient(
         models_config.models.solver_primary,
         base_url=models_config.base_url,
+        api_key_env=models_config.api_key_env,
     )
 
     # Only create the perturber client if at least one condition needs it.
@@ -70,6 +71,7 @@ def main() -> None:
         perturber_model = DeepSeekClient(
             models_config.models.perturbation_generator,
             base_url=models_config.base_url,
+            api_key_env=models_config.api_key_env,
         )
 
     # ---- Benchmark tasks ----
