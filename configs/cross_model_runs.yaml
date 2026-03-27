@@ -1,0 +1,54 @@
+groups:
+  - group_id: ds_chat_initial
+    display_name: DeepSeek-Chat Initial
+    family: deepseek
+    parameter_group: initial
+    log_dir: logs/ds-chat/humanevalplus_stagewise_fragility_20260325_063957
+
+  - group_id: ds_chat_balanced
+    display_name: DeepSeek-Chat Balanced
+    family: deepseek
+    parameter_group: balanced
+    log_dir: logs/ds-chat/humanevalplus_stagewise_fragility_20260325_142855__balanced
+
+  - group_id: ds_chat_conservative
+    display_name: DeepSeek-Chat Conservative
+    family: deepseek
+    parameter_group: conservative
+    log_dir: logs/ds-chat/humanevalplus_stagewise_fragility_20260325_143725__conservative
+
+  - group_id: ds_chat_creative
+    display_name: DeepSeek-Chat Creative
+    family: deepseek
+    parameter_group: creative
+    log_dir: logs/ds-chat/humanevalplus_stagewise_fragility_20260325_143735__creative
+
+  - group_id: ds_reasoner
+    display_name: DeepSeek-Reasoner
+    family: deepseek
+    parameter_group: reasoner
+    log_dir: logs/ds_reasoner/humanevalplus_stagewise_fragility_20260325_063549
+
+  - group_id: kimi_2_5
+    display_name: Kimi 2.5
+    family: kimi
+    parameter_group: unknown
+    log_dir: logs/kimi2.5_non_reasoning_humanevalplus_stagewise_fragility_20260325_204108/humanevalplus_stagewise_fragility_20260325_204108
+
+  - group_id: qwen_turbo
+    display_name: Qwen-Turbo
+    family: qwen
+    parameter_group: balanced
+    log_dir: logs/qwen_turbo/humanevalplus_stagewise_fragility_20260326_185022
+
+  - group_id: qwen_plus
+    display_name: Qwen-Plus
+    family: qwen
+    parameter_group: balanced
+    log_dir: logs/qwen_plus/humanevalplus_stagewise_fragility_20260326_214221
+
+  - group_id: qwen_local
+    display_name: Qwen3-Coder-30B Local
+    family: qwen
+    parameter_group: unknown
+    log_dir: logs/qwen_local/humanevalplus_stagewise_fragility_20260326_145212
