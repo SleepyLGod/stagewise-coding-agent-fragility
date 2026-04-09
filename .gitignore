@@ -1,37 +1,50 @@
-# Python
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
+*.pyo
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Virtual environments
 .venv/
 venv/
 
-# Environment
+# Packaging artifacts
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Environment files
 .env
 
-# Local outputs
+# Local experiment outputs
 logs/*
 results/*
-!results/.gitkeep
 !logs/.gitkeep
+!results/.gitkeep
+
+# Coverage artifacts
+.coverage
+coverage.xml
+htmlcov/
+
+# Notebook and editor metadata
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.python-version
 
 # macOS
 .DS_Store
 
-
+# Local scratch material
 *.txt
 notes/
 archive/
 tmp/
 scratch/
-
-*.egg-info/
-*.egg
-dist/
-build/
-__pycache__/
-*.pyc
 
 # LaTeX build artifacts
 *.aux
